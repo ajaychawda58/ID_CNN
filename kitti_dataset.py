@@ -34,9 +34,9 @@ class Class_to_ind(object):
         else:
             if self.binary:
                 if name==self.binary_item:
-                    return True
+                    return self.classes.index(name)
                 else:
-                    return False
+                    return self.classes.index(name)
             else:
                 return self.classes.index(name)
 # def get_data_path(name):
@@ -126,6 +126,6 @@ class KittiLoader(data.Dataset):
 
         if self.split != "testing":
             #return img, lbl
-            return torch.from_numpy(img).permute(2, 0, 1), target, height, width
+            return torch.from_numpy(img).permute(2, 0, 1), target
         else:
             return img
