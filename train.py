@@ -12,9 +12,9 @@ from torchvision import utils, transforms
 from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 
-from pycocotools.coco import COCO
-from coco import CocoDetection
-from kitti_dataset import KITTI
+from data.coco import Coco
+from data.kitti_dataset import KITTI
+from data.voc import VOC
 
 def parse_args():
     
@@ -27,7 +27,7 @@ def parse_args():
     return args
 
 args = parse_args()
-transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor(), transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+
 def get_transform(train):
     transform=[]
     transform.append(transforms.ToTensor())
@@ -36,32 +36,32 @@ def get_transform(train):
     return transforms.Compose(transform)
 
 if args.dataset == 'pascal_voc':
-    root = '/home/ajay/Desktop/ID_CNN/Dataset/VOCdata'
-    trainset = dset.VOCDetection(root=root, year='2012', image_set='train', download=False)
+    root = 'D:/Dataset/VOCdevkit/VOC2012'
+    trainset = VOC(root, None)
 elif args.dataset == 'kitti':
-    root = '/home/ajay/Desktop/ID_CNN/Dataset/KITTI'
+    root = 'D:/Dataset/KITTI'
     trainset = KITTI(root,None)
 else:
-    root = '/home/ajay/Desktop/ID_CNN/Dataset/COCO/train2017/'
-    annotations = '/home/ajay/Desktop/ID_CNN/Dataset/COCO/annotations_COCO/annotations/instances_train2017.json'
-    trainset = CocoDetection(root = root, annotations=annotations)
+    root = 'D:/Dataset/COCO/train2017/'
+    annotations = 'D:/Dataset/COCO/annotations/instances_train2017.json'
+    trainset = Coco(root = root, annotations=annotations)
     
 def collate_fn(batch):
     return tuple(zip(*batch))
 
-traindata = DataLoader(trainset, batch_size=1, shuffle=True, collate_fn=collate_fn)
+traindata = DataLoader(trainset, batch_size=4, shuffle=True, collate_fn=collate_fn)
 
 print(trainset)
 print(traindata)
 
 images, target = next(iter(traindata))
-print(images, target)
 
+print(target)
 if(torch.cuda.is_available()):
     device = torch.device("cuda")
     print(device, torch.cuda.get_device_name(0))
 else:
-    device(torch.device("cpu"))
+    device = torch.device("cpu")
     print(device)
 
 
