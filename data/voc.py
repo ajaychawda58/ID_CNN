@@ -38,7 +38,7 @@ class VOC(object):
             ymax = int(target['annotation']['object'][i]['bndbox']['ymax'])
             boxes.append([xmin, ymin, xmax, ymax])
 
-        boxes = torch.as_tensor(boxes, dtype=torch.int64)
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
         
         img_id = torch.tensor([idx])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:,2] - boxes[:, 0])
