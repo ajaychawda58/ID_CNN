@@ -1,4 +1,4 @@
-
+#https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
 from PIL import Image
 import os
 import os.path
@@ -37,7 +37,7 @@ class CocoDetection(torch.utils.data.Dataset):
 
         num_objs = len(target)
 
-        boxes, labels, areas = [], [], []
+        boxes, labels, areas, iscrowd = [], [], [], []
         for i in range(num_objs):
             xmin = target[i]['bbox'][0]
             ymin = target[i]['bbox'][1]
@@ -46,6 +46,7 @@ class CocoDetection(torch.utils.data.Dataset):
             boxes.append([xmin, ymin, xmax, ymax])
             areas.append(target[i]['area'])
             labels.append(target[i]['category_id'])
+            iscrowd.append(target[i]['iscrowd'])
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
         areas = torch.as_tensor(areas, dtype=torch.float32)
         img_id = torch.tensor([img_id])
@@ -53,10 +54,13 @@ class CocoDetection(torch.utils.data.Dataset):
         targets = {}
         targets['boxes'] = boxes
         targets['labels'] = labels
+        targets['img_id'] = img_id
+        targets['area'] = areas
+        targets['iscrowd'] = iscrowd
         target = targets
         if self.transforms is not None:
             img, target = self.transforms(img, target)
-
+        
         return img, target
 
 
