@@ -52,7 +52,7 @@ class VOC(object):
         
         
         if self.transforms is not None:
-            image, target = self.transforms(image, target)
+            image, targets = self.transforms(image, targets)
         
         return image, targets
     
