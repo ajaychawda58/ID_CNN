@@ -38,7 +38,7 @@ class KITTI(object):
         target = {}
         target["boxes"] = boxes
         target["labels"] = label
-        target["img_id"] = img_id
+        target["image_id"] = img_id
         target["area"] = area
         target["iscrowd"] = iscrowd
 

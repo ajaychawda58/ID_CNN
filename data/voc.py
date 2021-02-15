@@ -39,14 +39,14 @@ class VOC(object):
             boxes.append([xmin, ymin, xmax, ymax])
 
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        
+        labels = torch.as_tensor(labels, dtype=torch.int64)
         img_id = torch.tensor([idx])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:,2] - boxes[:, 0])
         iscrowd = torch.zeros((num_objs, ), dtype=torch.int64)   
 
         targets["boxes"] = boxes
         targets["labels"] = labels
-        targets["img_id"] = img_id
+        targets["image_id"] = img_id
         targets["area"] = area
         targets["iscrowd"] = iscrowd
         
