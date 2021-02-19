@@ -9,16 +9,15 @@ import torch
 import torchvision
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import torchvision.datasets as dset
 from torchvision import utils
 from torchvision.models.detection.rpn import AnchorGenerator
-from transforms import Compose, ToTensor, RandomHorizontalFlip
+from utils.transforms import Compose, ToTensor, RandomHorizontalFlip
 from data.coco import Coco
 from data.kitti_dataset import KITTI
 from data.voc import VOC
 from backbone.backbone_vgg import vgg16
 from models.faster_rcnn_mod import FasterRCNN
-from engine import train_one_epoch, evaluate
+from utils.engine import train_one_epoch, evaluate
 
 def parse_args():
     
@@ -52,8 +51,8 @@ def collate_fn(batch):
 
 print(len(trainset))
 indices = torch.randperm(len(trainset)).tolist()
-dataset = torch.utils.data.Subset(trainset, indices[:500])
-testdata = torch.utils.data.Subset(trainset, indices[500:750])
+dataset = torch.utils.data.Subset(trainset, indices[:1000])
+testdata = torch.utils.data.Subset(trainset, indices[7000:])
 traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
 data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
 
@@ -72,7 +71,7 @@ else:
 backbone = vgg16(pretrained=True).features
 backbone.out_channels = 512
 
-anchor_generator = AnchorGenerator(sizes=((32, 64, 128),), aspect_ratios=((0.5,1.0,2.0),)) 
+anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256),), aspect_ratios=((0.5,1.0,2.0),)) 
 
 roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=7, sampling_ratio=2)
 
@@ -80,7 +79,7 @@ model = FasterRCNN(backbone, num_classes=10, rpn_anchor_generator= anchor_genera
 
 model.to(device)
 
-model = nn.DataParallel(model)
+#model = nn.DataParallel(model)
 
 
 params = [p for p in model.parameters() if p.requires_grad]
@@ -100,7 +99,7 @@ for epoch in range(num_epochs):
    
     
         
-torch.save(model, 'model.pt')
+torch.save(model.state_dict(), 'model1.pt')
 
 
 

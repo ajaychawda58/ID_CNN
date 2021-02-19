@@ -1,35 +1,22 @@
-#https://pytorch.org/vision/stable/_modules/torchvision/models/detection/faster_rcnn.html#fasterrcnn_resnet50_fpn
-
-from collections import OrderedDict
-
 import torch
 from torch import nn
-import torch.nn.functional as F
 
-from torchvision.ops import misc as misc_nn_ops
 from torchvision.ops import MultiScaleRoIAlign
-
-import numpy as np
 
 from torchvision.models.utils import load_state_dict_from_url
 
-from torchvision.models.detection.anchor_utils import AnchorGenerator
-from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
-from torchvision.models.detection.rpn import RPNHead, RegionProposalNetwork
-from torchvision.models.detection.roi_heads import RoIHeads
-from torchvision.models.detection.transform import GeneralizedRCNNTransform
+from torchvision.models.detection.faster_rcnn import FasterRCNN
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 
-
 __all__ = [
-    "FasterRCNN", "fasterrcnn_resnet50_fpn",
+    "KeypointRCNN", "keypointrcnn_resnet50_fpn"
 ]
 
 
-class FasterRCNN(GeneralizedRCNN):
+class KeypointRCNN(FasterRCNN):
     """
-    Implements Faster R-CNN.
+    Implements Keypoint R-CNN.
 
     The input to the model is expected to be a list of tensors, each of shape [C, H, W], one for each
     image, and should be in 0-1 range. Different images can have different sizes.
@@ -41,9 +28,11 @@ class FasterRCNN(GeneralizedRCNN):
         - boxes (FloatTensor[N, 4]): the ground-truth boxes in [x1, y1, x2, y2] format, with values of x
           between 0 and W and values of y between 0 and H
         - labels (Int64Tensor[N]): the class label for each ground-truth box
+        - keypoints (FloatTensor[N, K, 3]): the K keypoints location for each of the N instances, in the
+          format [x, y, visibility], where visibility=0 means that the keypoint is not visible.
 
     The model returns a Dict[Tensor] during training, containing the classification and regression
-    losses for both the RPN and the R-CNN.
+    losses for both the RPN and the R-CNN, and the keypoint loss.
 
     During inference, the model requires only the input tensors, and returns the post-processed
     predictions as a List[Dict[Tensor]], one for each input image. The fields of the Dict are as
@@ -52,6 +41,7 @@ class FasterRCNN(GeneralizedRCNN):
           between 0 and W and values of y between 0 and H
         - labels (Int64Tensor[N]): the predicted labels for each image
         - scores (Tensor[N]): the scores or each prediction
+        - keypoints (FloatTensor[N, K, 3]): the locations of the predicted keypoints, in [x, y, v] format.
 
     Arguments:
         backbone (nn.Module): the network used to compute the features for the model.
@@ -102,17 +92,23 @@ class FasterRCNN(GeneralizedRCNN):
             of the classification head
         bbox_reg_weights (Tuple[float, float, float, float]): weights for the encoding/decoding of the
             bounding boxes
+        keypoint_roi_pool (MultiScaleRoIAlign): the module which crops and resizes the feature maps in
+             the locations indicated by the bounding boxes, which will be used for the keypoint head.
+        keypoint_head (nn.Module): module that takes the cropped feature maps as input
+        keypoint_predictor (nn.Module): module that takes the output of the keypoint_head and returns the
+            heatmap logits
 
     Example::
 
         >>> import torch
         >>> import torchvision
-        >>> from torchvision.models.detection import FasterRCNN
-        >>> from torchvision.models.detection.rpn import AnchorGenerator
+        >>> from torchvision.models.detection import KeypointRCNN
+        >>> from torchvision.models.detection.anchor_utils import AnchorGenerator
+        >>>
         >>> # load a pre-trained model for classification and return
         >>> # only the features
         >>> backbone = torchvision.models.mobilenet_v2(pretrained=True).features
-        >>> # FasterRCNN needs to know the number of
+        >>> # KeypointRCNN needs to know the number of
         >>> # output channels in a backbone. For mobilenet_v2, it's 1280
         >>> # so we need to add it here
         >>> backbone.out_channels = 1280
@@ -136,19 +132,23 @@ class FasterRCNN(GeneralizedRCNN):
         >>>                                                 output_size=7,
         >>>                                                 sampling_ratio=2)
         >>>
-        >>> # put the pieces together inside a FasterRCNN model
-        >>> model = FasterRCNN(backbone,
-        >>>                    num_classes=2,
-        >>>                    rpn_anchor_generator=anchor_generator,
-        >>>                    box_roi_pool=roi_pooler)
+        >>> keypoint_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],
+        >>>                                                          output_size=14,
+        >>>                                                          sampling_ratio=2)
+        >>> # put the pieces together inside a KeypointRCNN model
+        >>> model = KeypointRCNN(backbone,
+        >>>                      num_classes=2,
+        >>>                      rpn_anchor_generator=anchor_generator,
+        >>>                      box_roi_pool=roi_pooler,
+        >>>                      keypoint_roi_pool=keypoint_roi_pooler)
+        >>> model.eval()
         >>> model.eval()
         >>> x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
         >>> predictions = model(x)
     """
-
     def __init__(self, backbone, num_classes=None,
                  # transform parameters
-                 min_size=800, max_size=1333,
+                 min_size=None, max_size=1333,
                  image_mean=None, image_std=None,
                  # RPN parameters
                  rpn_anchor_generator=None, rpn_head=None,
@@ -162,168 +162,114 @@ class FasterRCNN(GeneralizedRCNN):
                  box_score_thresh=0.05, box_nms_thresh=0.5, box_detections_per_img=100,
                  box_fg_iou_thresh=0.5, box_bg_iou_thresh=0.5,
                  box_batch_size_per_image=512, box_positive_fraction=0.25,
-                 bbox_reg_weights=None):
+                 bbox_reg_weights=None,
+                 # keypoint parameters
+                 keypoint_roi_pool=None, keypoint_head=None, keypoint_predictor=None,
+                 num_keypoints=17):
 
-        if not hasattr(backbone, "out_channels"):
-            raise ValueError(
-                "backbone should contain an attribute out_channels "
-                "specifying the number of output channels (assumed to be the "
-                "same for all the levels)")
-
-        assert isinstance(rpn_anchor_generator, (AnchorGenerator, type(None)))
-        assert isinstance(box_roi_pool, (MultiScaleRoIAlign, type(None)))
+        assert isinstance(keypoint_roi_pool, (MultiScaleRoIAlign, type(None)))
+        if min_size is None:
+            min_size = (640, 672, 704, 736, 768, 800)
 
         if num_classes is not None:
-            if box_predictor is not None:
-                raise ValueError("num_classes should be None when box_predictor is specified")
-        else:
-            if box_predictor is None:
-                raise ValueError("num_classes should not be None when box_predictor "
-                                 "is not specified")
+            if keypoint_predictor is not None:
+                raise ValueError("num_classes should be None when keypoint_predictor is specified")
 
         out_channels = backbone.out_channels
 
-        if rpn_anchor_generator is None:
-            anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
-            aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
-            rpn_anchor_generator = AnchorGenerator(
-                anchor_sizes, aspect_ratios
-            )
-        if rpn_head is None:
-            rpn_head = RPNHead(
-                out_channels, rpn_anchor_generator.num_anchors_per_location()[0]
-            )
-
-        rpn_pre_nms_top_n = dict(training=rpn_pre_nms_top_n_train, testing=rpn_pre_nms_top_n_test)
-        rpn_post_nms_top_n = dict(training=rpn_post_nms_top_n_train, testing=rpn_post_nms_top_n_test)
-
-        rpn = RegionProposalNetwork(
-            rpn_anchor_generator, rpn_head,
-            rpn_fg_iou_thresh, rpn_bg_iou_thresh,
-            rpn_batch_size_per_image, rpn_positive_fraction,
-            rpn_pre_nms_top_n, rpn_post_nms_top_n, rpn_nms_thresh)
-
-        if box_roi_pool is None:
-            box_roi_pool = MultiScaleRoIAlign(
+        if keypoint_roi_pool is None:
+            keypoint_roi_pool = MultiScaleRoIAlign(
                 featmap_names=['0', '1', '2', '3'],
-                output_size=7,
+                output_size=14,
                 sampling_ratio=2)
 
-        if box_head is None:
-            resolution = box_roi_pool.output_size[0]
-            representation_size = 1024
-            box_head = TwoMLPHead(
-                out_channels * resolution ** 2,
-                representation_size)
+        if keypoint_head is None:
+            keypoint_layers = tuple(512 for _ in range(8))
+            keypoint_head = KeypointRCNNHeads(out_channels, keypoint_layers)
 
-        if box_predictor is None:
-            representation_size = 1024
-            box_predictor = FastRCNNPredictor(
-                representation_size,
-                num_classes)
+        if keypoint_predictor is None:
+            keypoint_dim_reduced = 512  # == keypoint_layers[-1]
+            keypoint_predictor = KeypointRCNNPredictor(keypoint_dim_reduced, num_keypoints)
 
-        roi_heads = RoIHeads(
-            # Box
+        super(KeypointRCNN, self).__init__(
+            backbone, num_classes,
+            # transform parameters
+            min_size, max_size,
+            image_mean, image_std,
+            # RPN-specific parameters
+            rpn_anchor_generator, rpn_head,
+            rpn_pre_nms_top_n_train, rpn_pre_nms_top_n_test,
+            rpn_post_nms_top_n_train, rpn_post_nms_top_n_test,
+            rpn_nms_thresh,
+            rpn_fg_iou_thresh, rpn_bg_iou_thresh,
+            rpn_batch_size_per_image, rpn_positive_fraction,
+            # Box parameters
             box_roi_pool, box_head, box_predictor,
+            box_score_thresh, box_nms_thresh, box_detections_per_img,
             box_fg_iou_thresh, box_bg_iou_thresh,
             box_batch_size_per_image, box_positive_fraction,
-            bbox_reg_weights,
-            box_score_thresh, box_nms_thresh, box_detections_per_img)
+            bbox_reg_weights)
 
-        if image_mean is None:
-            image_mean = [0.485, 0.456, 0.406]
-        if image_std is None:
-            image_std = [0.229, 0.224, 0.225]
-        transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
-
-        super(FasterRCNN, self).__init__(backbone, rpn, roi_heads, transform)
-
-    def extract_all(self, x, verbose=False):
-        out0 = x
-        out1 = self.backbone[4](F.relu(self.backbone[2](F.relu(self.backbone[0](x)))))
-
-        
-class TwoMLPHead(nn.Module):
-    """
-    Standard heads for FPN-based models
-
-    Arguments:
-        in_channels (int): number of input channels
-        representation_size (int): size of the intermediate representation
-    """
-
-    def __init__(self, in_channels, representation_size):
-        super(TwoMLPHead, self).__init__()
-
-        self.fc6 = nn.Linear(in_channels, representation_size)
-        self.fc7 = nn.Linear(representation_size, representation_size)
-
-    def forward(self, x):
-        x = x.flatten(start_dim=1)
-
-        x = F.relu(self.fc6(x))
-        x = F.relu(self.fc7(x))
-
-        return x
-
-    def extract(self, x, verbose=False):
-        out1 = x.flatten(start_dim=1)
-        out2 = F.relu(self.fc6(out1))
-        out3 = F.relu(self.fc7(out2))
-        if verbose == True:
-            print(str(out1.shape) + ' ' + str(np.prod(out0.shape[1:])))
-            print(str(out2.shape) + ' ' + str(np.prod(out1.shape[1:])))
-            print(str(out3.shape) + ' ' + str(np.prod(out2.shape[1:])))
-
-        return [out1, out2, out3]
+        self.roi_heads.keypoint_roi_pool = keypoint_roi_pool
+        self.roi_heads.keypoint_head = keypoint_head
+        self.roi_heads.keypoint_predictor = keypoint_predictor
 
 
-class FastRCNNPredictor(nn.Module):
-    """
-    Standard classification + bounding box regression layers
-    for Fast R-CNN.
+class KeypointRCNNHeads(nn.Sequential):
+    def __init__(self, in_channels, layers):
+        d = []
+        next_feature = in_channels
+        for out_channels in layers:
+            d.append(nn.Conv2d(next_feature, out_channels, 3, stride=1, padding=1))
+            d.append(nn.ReLU(inplace=True))
+            next_feature = out_channels
+        super(KeypointRCNNHeads, self).__init__(*d)
+        for m in self.children():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                nn.init.constant_(m.bias, 0)
 
-    Arguments:
-        in_channels (int): number of input channels
-        num_classes (int): number of output classes (including background)
-    """
 
-    def __init__(self, in_channels, num_classes):
-        super(FastRCNNPredictor, self).__init__()
-        self.cls_score = nn.Linear(in_channels, num_classes)
-        self.bbox_pred = nn.Linear(in_channels, num_classes * 4)
+class KeypointRCNNPredictor(nn.Module):
+    def __init__(self, in_channels, num_keypoints):
+        super(KeypointRCNNPredictor, self).__init__()
+        input_features = in_channels
+        deconv_kernel = 4
+        self.kps_score_lowres = nn.ConvTranspose2d(
+            input_features,
+            num_keypoints,
+            deconv_kernel,
+            stride=2,
+            padding=deconv_kernel // 2 - 1,
+        )
+        nn.init.kaiming_normal_(
+            self.kps_score_lowres.weight, mode="fan_out", nonlinearity="relu"
+        )
+        nn.init.constant_(self.kps_score_lowres.bias, 0)
+        self.up_scale = 2
+        self.out_channels = num_keypoints
 
     def forward(self, x):
-        if x.dim() == 4:
-            assert list(x.shape[2:]) == [1, 1]
-        x = x.flatten(start_dim=1)
-        scores = self.cls_score(x)
-        bbox_deltas = self.bbox_pred(x)
-
-        return scores, bbox_deltas
-
-    def extract(self, x, verbose=False):
-        out1 = x.flatten(start_dim=1)
-        out2 = F.cls_score(out1)
-        out3 = F.bbox_pred(out2)
-        if verbose == True:
-            print(str(out1.shape) + ' ' + str(np.prod(out0.shape[1:])))
-            print(str(out2.shape) + ' ' + str(np.prod(out1.shape[1:])))
-            print(str(out3.shape) + ' ' + str(np.prod(out2.shape[1:])))
-
-        return [out1, out2, out3]
+        x = self.kps_score_lowres(x)
+        return torch.nn.functional.interpolate(
+            x, scale_factor=float(self.up_scale), mode="bilinear", align_corners=False, recompute_scale_factor=False
+        )
 
 
 model_urls = {
-    'fasterrcnn_resnet50_fpn_coco':
-        'https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth',
+    # legacy model for BC reasons, see https://github.com/pytorch/vision/issues/1606
+    'keypointrcnn_resnet50_fpn_coco_legacy':
+        'https://download.pytorch.org/models/keypointrcnn_resnet50_fpn_coco-9f466800.pth',
+    'keypointrcnn_resnet50_fpn_coco':
+        'https://download.pytorch.org/models/keypointrcnn_resnet50_fpn_coco-fc266e95.pth',
 }
 
 
-def fasterrcnn_resnet50_fpn(pretrained=False, progress=True,
-                            num_classes=91, pretrained_backbone=True, trainable_backbone_layers=3, **kwargs):
+def keypointrcnn_resnet50_fpn(pretrained=False, progress=True,
+                              num_classes=2, num_keypoints=17,
+                              pretrained_backbone=True, trainable_backbone_layers=3, **kwargs):
     """
-    Constructs a Faster R-CNN model with a ResNet-50-FPN backbone.
+    Constructs a Keypoint R-CNN model with a ResNet-50-FPN backbone.
 
     The input to the model is expected to be a list of tensors, each of shape ``[C, H, W]``, one for each
     image, and should be in ``0-1`` range. Different images can have different sizes.
@@ -335,41 +281,32 @@ def fasterrcnn_resnet50_fpn(pretrained=False, progress=True,
         - boxes (``FloatTensor[N, 4]``): the ground-truth boxes in ``[x1, y1, x2, y2]`` format, with values of ``x``
           between ``0`` and ``W`` and values of ``y`` between ``0`` and ``H``
         - labels (``Int64Tensor[N]``): the class label for each ground-truth box
+        - keypoints (``FloatTensor[N, K, 3]``): the ``K`` keypoints location for each of the ``N`` instances, in the
+          format ``[x, y, visibility]``, where ``visibility=0`` means that the keypoint is not visible.
 
     The model returns a ``Dict[Tensor]`` during training, containing the classification and regression
-    losses for both the RPN and the R-CNN.
+    losses for both the RPN and the R-CNN, and the keypoint loss.
 
     During inference, the model requires only the input tensors, and returns the post-processed
     predictions as a ``List[Dict[Tensor]]``, one for each input image. The fields of the ``Dict`` are as
     follows:
-        - boxes (``FloatTensor[N, 4]``): the predicted boxes in ``[x1, y1, x2, y2]`` format, with values of ``x``
+        - boxes (``FloatTensor[N, 4]``): the predicted boxes in ``[x1, y1, x2, y2]`` format,  with values of ``x``
           between ``0`` and ``W`` and values of ``y`` between ``0`` and ``H``
         - labels (``Int64Tensor[N]``): the predicted labels for each image
         - scores (``Tensor[N]``): the scores or each prediction
+        - keypoints (``FloatTensor[N, K, 3]``): the locations of the predicted keypoints, in ``[x, y, v]`` format.
 
-    Faster R-CNN is exportable to ONNX for a fixed batch size with inputs images of fixed size.
+    Keypoint R-CNN is exportable to ONNX for a fixed batch size with inputs images of fixed size.
 
     Example::
 
-        >>> model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
-        >>> # For training
-        >>> images, boxes = torch.rand(4, 3, 600, 1200), torch.rand(4, 11, 4)
-        >>> labels = torch.randint(1, 91, (4, 11))
-        >>> images = list(image for image in images)
-        >>> targets = []
-        >>> for i in range(len(images)):
-        >>>     d = {}
-        >>>     d['boxes'] = boxes[i]
-        >>>     d['labels'] = labels[i]
-        >>>     targets.append(d)
-        >>> output = model(images, targets)
-        >>> # For inference
+        >>> model = torchvision.models.detection.keypointrcnn_resnet50_fpn(pretrained=True)
         >>> model.eval()
         >>> x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
         >>> predictions = model(x)
         >>>
         >>> # optionally, if you want to export the model to ONNX:
-        >>> torch.onnx.export(model, x, "faster_rcnn.onnx", opset_version = 11)
+        >>> torch.onnx.export(model, x, "keypoint_rcnn.onnx", opset_version = 11)
 
     Arguments:
         pretrained (bool): If True, returns a model pre-trained on COCO train2017
@@ -387,9 +324,12 @@ def fasterrcnn_resnet50_fpn(pretrained=False, progress=True,
         # no need to download the backbone if pretrained is set
         pretrained_backbone = False
     backbone = resnet_fpn_backbone('resnet50', pretrained_backbone, trainable_layers=trainable_backbone_layers)
-    model = FasterRCNN(backbone, num_classes, **kwargs)
+    model = KeypointRCNN(backbone, num_classes, num_keypoints=num_keypoints, **kwargs)
     if pretrained:
-        state_dict = load_state_dict_from_url(model_urls['fasterrcnn_resnet50_fpn_coco'],
+        key = 'keypointrcnn_resnet50_fpn_coco'
+        if pretrained == 'legacy':
+            key += '_legacy'
+        state_dict = load_state_dict_from_url(model_urls[key],
                                               progress=progress)
         model.load_state_dict(state_dict)
     return model
