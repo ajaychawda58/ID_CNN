@@ -9,7 +9,7 @@ from torch.jit.annotations import Dict, List, Tuple
 
 from torchvision.models.utils import load_state_dict_from_url
 
-from torchvision.models import _utils as det_utils
+from torchvision.models.detection import _utils as det_utils
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
@@ -575,7 +575,7 @@ model_urls = {
 }
 
 
-[docs]def retinanet_resnet50_fpn(pretrained=False, progress=True,
+def retinanet_resnet50_fpn(pretrained=False, progress=True,
                            num_classes=91, pretrained_backbone=True, **kwargs):
     """
     Constructs a RetinaNet model with a ResNet-50-FPN backbone.

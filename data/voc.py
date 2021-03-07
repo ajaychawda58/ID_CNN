@@ -32,10 +32,10 @@ class VOC(object):
         for i in range(num_objs):
             label = (target['annotation']['object'][i]['name'])
             labels.append(VOC_CLASSES.index(label))
-            xmin = int(target['annotation']['object'][i]['bndbox']['xmin'])
-            xmax = int(target['annotation']['object'][i]['bndbox']['xmax'])
-            ymin = int(target['annotation']['object'][i]['bndbox']['ymin'])
-            ymax = int(target['annotation']['object'][i]['bndbox']['ymax'])
+            xmin = float(target['annotation']['object'][i]['bndbox']['xmin'])
+            xmax = float(target['annotation']['object'][i]['bndbox']['xmax'])
+            ymin = float(target['annotation']['object'][i]['bndbox']['ymin'])
+            ymax = float(target['annotation']['object'][i]['bndbox']['ymax'])
             boxes.append([xmin, ymin, xmax, ymax])
 
         boxes = torch.as_tensor(boxes, dtype=torch.float32)

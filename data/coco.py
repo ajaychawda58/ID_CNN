@@ -12,7 +12,7 @@ from pycocotools.coco import COCO
 class Coco(torch.utils.data.Dataset):
    
 
-    def __init__(self, root, annotations, transform=None, transforms=None):
+    def __init__(self, root, annotations, transforms=None):
         self.root = root
         self.transforms = transforms
         self.coco = COCO(annotations)
@@ -51,13 +51,15 @@ class Coco(torch.utils.data.Dataset):
         areas = torch.as_tensor(areas, dtype=torch.float32)
         img_id = torch.tensor([img_id])
         labels = torch.as_tensor(labels, dtype=torch.int64)
+        iscrowd = torch.as_tensor(iscrowd, dtype=torch.int64)
         targets = {}
         targets['boxes'] = boxes
         targets['labels'] = labels
-        targets['img_id'] = img_id
+        targets['image_id'] = img_id
         targets['area'] = areas
         targets['iscrowd'] = iscrowd
         target = targets
+        
         if self.transforms is not None:
             img, target = self.transforms(img, target)
         

@@ -238,11 +238,36 @@ class FasterRCNN(GeneralizedRCNN):
 
         super(FasterRCNN, self).__init__(backbone, rpn, roi_heads, transform)
 
+
+
     def extract_all(self, x, verbose=False):
         out0 = x
+        print(out0.shape)
         out1 = self.backbone[4](F.relu(self.backbone[2](F.relu(self.backbone[0](x)))))
-
-        
+        print(out1.shape)
+        out2 = self.backbone[9](F.relu(self.backbone[7](F.relu(self.backbone[5](out1)))))
+        print(out2.shape)
+        out3 = self.backbone[16] ( F.relu( self.backbone[14]( F.relu( self.backbone[12] ( F.relu( self.backbone[10] (out2) ) ) ) ) ) )        
+        print(out3.shape)
+        out4 = self.backbone[23] ( F.relu( self.backbone[21]( F.relu( self.backbone[19] ( F.relu( self.backbone[17] (out3) ) ) ) ) ) )    
+        print(out4.shape)
+        out5 = self.backbone[30] ( F.relu( self.backbone[28]( F.relu( self.backbone[26] ( F.relu( self.backbone[24] (out4) ) ) ) ) ) )
+        print(out5.shape)
+        #Regionproposalnetwork part
+        out6 = F.relu (self.rpn.head.conv(out5))
+        print(out6.shape)
+        out7 = self.rpn.head.cls_logits(out6)
+        print(out7.shape)
+        out8 = self.rpn.head.bbox_pred(out6)
+        print(out8.shape)
+        #ROIHeads
+        print(temp1.shape, temp2.shape)
+        out9 = temp1.flatten(start_dim=1)
+        print(out9.shape)
+        out10 =  F.relu(self.roi_heads.box_head.fc6(out9))
+        print(out10.shape)
+        out11 = F.relu(self.roi_heads.box_head.fc7(out10))
+        print(out11.shape)
 class TwoMLPHead(nn.Module):
     """
     Standard heads for FPN-based models
@@ -260,23 +285,13 @@ class TwoMLPHead(nn.Module):
 
     def forward(self, x):
         x = x.flatten(start_dim=1)
-
+        
         x = F.relu(self.fc6(x))
         x = F.relu(self.fc7(x))
 
         return x
 
-    def extract(self, x, verbose=False):
-        out1 = x.flatten(start_dim=1)
-        out2 = F.relu(self.fc6(out1))
-        out3 = F.relu(self.fc7(out2))
-        if verbose == True:
-            print(str(out1.shape) + ' ' + str(np.prod(out0.shape[1:])))
-            print(str(out2.shape) + ' ' + str(np.prod(out1.shape[1:])))
-            print(str(out3.shape) + ' ' + str(np.prod(out2.shape[1:])))
-
-        return [out1, out2, out3]
-
+ 
 
 class FastRCNNPredictor(nn.Module):
     """
@@ -302,17 +317,7 @@ class FastRCNNPredictor(nn.Module):
 
         return scores, bbox_deltas
 
-    def extract(self, x, verbose=False):
-        out1 = x.flatten(start_dim=1)
-        out2 = F.cls_score(out1)
-        out3 = F.bbox_pred(out2)
-        if verbose == True:
-            print(str(out1.shape) + ' ' + str(np.prod(out0.shape[1:])))
-            print(str(out2.shape) + ' ' + str(np.prod(out1.shape[1:])))
-            print(str(out3.shape) + ' ' + str(np.prod(out2.shape[1:])))
-
-        return [out1, out2, out3]
-
+  
 
 model_urls = {
     'fasterrcnn_resnet50_fpn_coco':
