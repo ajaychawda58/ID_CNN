@@ -48,6 +48,9 @@ class Coco(torch.utils.data.Dataset):
             labels.append(target[i]['category_id'])
             iscrowd.append(target[i]['iscrowd'])
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        boxes = boxes.reshape(-1,4)
+        keep = (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 2] > boxes[:, 0])
+        boxes = boxes[keep]
         areas = torch.as_tensor(areas, dtype=torch.float32)
         img_id = torch.tensor([img_id])
         labels = torch.as_tensor(labels, dtype=torch.int64)

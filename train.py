@@ -18,7 +18,7 @@ from data.coco import Coco
 from data.kitti_dataset import KITTI
 from data.voc import VOC
 from backbone.backbone_vgg import vgg16, vgg11, vgg13, vgg19
-from backbone.backbone_resnet import resnet18
+from backbone.backbone_resnet import resnet18, resnet34
 from models.faster_rcnn_mod import FasterRCNN
 from models.mask_rcnn_mod import MaskRCNN
 from models.keypoint_rcnn_mod import KeypointRCNN
@@ -42,7 +42,7 @@ args = parse_args()
 
 
 save_path = os.path.join("trained_model", args.dataset, args.model,args.backbone, "model.pt")
-checkpoint_path = os.path.join("trained_model", args.dataset, args.model,args.backbone, "checkpoint.pt")
+checkpoint_path = os.path.join("trained_model", args.dataset, args.model,args.backbone)
 
 def collate_fn(batch):
     return tuple(zip(*batch))
@@ -78,38 +78,38 @@ def transform(width, height):
 
 
 if args.dataset == 'pascal_voc':
-    root = '/home/ajay/Desktop/ID_CNN/Dataset/VOCdevkit/VOC2012'
-    num_classes = 20
+    root = '/work/chawda/Dataset/VOCdevkit/VOC2012'
+    num_classes = 21
     width, height = 300, 300
     transform = transform(width, height)
     data = VOC(root, transform)
     indices = torch.randperm(len(data)).tolist()
-    dataset = torch.utils.data.Subset(data, indices[:16000])
-    testdata = torch.utils.data.Subset(data, indices[16000:])
+    dataset = torch.utils.data.Subset(data, indices[:13500])
+    testdata = torch.utils.data.Subset(data, indices[13500:])
     traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
-    data_loader_test = DataLoader(testdata, batch_size=2, shuffle=True, collate_fn=collate_fn)
+    data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
 elif args.dataset == 'kitti':
-    root = '/home/ajay/Desktop/ID_CNN/Dataset/KITTI'
+    root = '/work/chawda/Dataset/KITTI'
     num_classes = 10
-    width, height = 1200, 300
+    width, height = 1200, 1200
     transform = transform(width, height)
     data = KITTI(root,transform)
     indices = torch.randperm(len(data)).tolist()
-    dataset = torch.utils.data.Subset(data, indices[:7000])
-    testdata = torch.utils.data.Subset(data, indices[7000:])
+    dataset = torch.utils.data.Subset(data, indices[:5500])
+    testdata = torch.utils.data.Subset(data, indices[5500:])
     traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
-    data_loader_test = DataLoader(testdata, batch_size=2, shuffle=True, collate_fn=collate_fn)
+    data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
 else:
-    root = '/home/ajay/Desktop/ID_CNN/Dataset/COCO/train2017/'
-    annotations = '/home/ajay/Desktop/ID_CNN/Dataset/COCO/annotations/instances_train2017.json'
-    indices = torch.randperm(len(data)).tolist()
+    root = '/work/chawda/Dataset/COCO/train2017/'
+    annotations = '/work/chawda/Dataset/COCO/annotations/instances_train2017.json'
     width, height = 300, 300
     transform = transform(width, height)
     data = Coco(root = root, annotations=annotations, transforms=transform)
-    dataset = torch.utils.data.Subset(data, indices[:110000])
-    testdata = torch.utils.data.Subset(data, indices[110000:])
+    indices = torch.randperm(len(data)).tolist()
+    dataset = torch.utils.data.Subset(data, indices[:100000])
+    testdata = torch.utils.data.Subset(data, indices[100000:])
     traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
-    data_loader_test = DataLoader(testdata, batch_size=2, shuffle=True, collate_fn=collate_fn)
+    data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
     num_classes = 91
     
 print(len(data))
@@ -178,7 +178,7 @@ elif backbone_name == 'resnext101_32x8d':
     backbone = nn.Sequential(*modules)
     backbone.out_channels = 2048
 
-anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256),), aspect_ratios=((0.5,1.0),)) 
+anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),), aspect_ratios=((0.5,1.0,2.0),)) 
 
 roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=7, sampling_ratio=2)
 #mask_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=14,sampling_ratio=2)
@@ -186,14 +186,15 @@ roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size
 
 if args.model == 'faster_rcnn':
     model = FasterRCNN(backbone, num_classes=num_classes, rpn_anchor_generator= anchor_generator, box_roi_pool=roi_pooler)
-elif args.model == 'mask_rcnn':
-    model = MaskRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler,
-                                                                                    mask_roi_pool=mask_roi_pooler)
-elif args.model == 'keypoint_rcnn':
-    model = KeypointRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler, 
-                                                                            keypoint_roi_pool=keypoint_roi_pooler)
+#elif args.#model == 'mask_rcnn':
+#    model = MaskRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler,
+#                                                                                    mask_roi_pool=mask_roi_pooler)
+#elif args.model == 'keypoint_rcnn':
+#    model = KeypointRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler, 
+#                                                                           keypoint_roi_pool=keypoint_roi_pooler)
 elif args.model == 'retinanet':
     model = RetinaNet(backbone, num_classes=num_classes, anchor_generator=anchor_generator)
+
 model.to(device)
 
 #model = nn.DataParallel(model)
@@ -208,19 +209,20 @@ num_epochs = args.epoch
 
 
 for epoch in range(num_epochs):
-    if epoch % 10 == 0:
+    if epoch % 20 == 0:
         torch.save({
             'epoch': epoch,
             'model_state_dict' : model.state_dict(),
             'optimizer_state_dict' : optimizer.state_dict(),
-        }, checkpoint_path)
-
+        }, os.path.join(checkpoint_path, "checkpoint_"+str(epoch)+".pt"))
+	
     # train for one epoch, printing every 10 iterations
-    train_one_epoch(model, optimizer, traindata, device, epoch, print_freq=100)
+    train_one_epoch(model, optimizer, traindata, device, epoch, print_freq=1000)
     # update the learning rate
     lr_scheduler.step()
     # evaluate on the test dataset
     evaluate(model, data_loader_test, device=device)
+    print(epoch)
    
         
 torch.save(model.state_dict(),save_path)
