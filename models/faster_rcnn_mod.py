@@ -240,34 +240,6 @@ class FasterRCNN(GeneralizedRCNN):
 
 
 
-    def extract_all(self, x, verbose=False):
-        out0 = x
-        print(out0.shape)
-        out1 = self.backbone[4](F.relu(self.backbone[2](F.relu(self.backbone[0](x)))))
-        print(out1.shape)
-        out2 = self.backbone[9](F.relu(self.backbone[7](F.relu(self.backbone[5](out1)))))
-        print(out2.shape)
-        out3 = self.backbone[16] ( F.relu( self.backbone[14]( F.relu( self.backbone[12] ( F.relu( self.backbone[10] (out2) ) ) ) ) ) )        
-        print(out3.shape)
-        out4 = self.backbone[23] ( F.relu( self.backbone[21]( F.relu( self.backbone[19] ( F.relu( self.backbone[17] (out3) ) ) ) ) ) )    
-        print(out4.shape)
-        out5 = self.backbone[30] ( F.relu( self.backbone[28]( F.relu( self.backbone[26] ( F.relu( self.backbone[24] (out4) ) ) ) ) ) )
-        print(out5.shape)
-        #Regionproposalnetwork part
-        out6 = F.relu (self.rpn.head.conv(out5))
-        print(out6.shape)
-        out7 = self.rpn.head.cls_logits(out6)
-        print(out7.shape)
-        out8 = self.rpn.head.bbox_pred(out6)
-        print(out8.shape)
-        #ROIHeads
-        print(temp1.shape, temp2.shape)
-        out9 = temp1.flatten(start_dim=1)
-        print(out9.shape)
-        out10 =  F.relu(self.roi_heads.box_head.fc6(out9))
-        print(out10.shape)
-        out11 = F.relu(self.roi_heads.box_head.fc7(out10))
-        print(out11.shape)
 class TwoMLPHead(nn.Module):
     """
     Standard heads for FPN-based models
