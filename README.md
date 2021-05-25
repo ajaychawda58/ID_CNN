@@ -4,6 +4,11 @@ Intrinsic Dimension of Convolutional Neural Networks
 ## Plots
 
 ![Image1](Plots/1.png)
+![Image2](Plots/2.png)
+![Image3](Plots/3.png)
+![Image4](Plots/4.png)
+![Image5](Plots/5.png)
+![Image6](Plots/6.png)
 
 ## References
 1. Intrinsic Dimension calculation - https://github.com/ansuini/IntrinsicDimDeep
