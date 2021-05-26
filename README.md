@@ -6,6 +6,7 @@ One of the geometric properties of representing data in neural network is Intrin
 ## Datasets
 
 | Dataset | **KITTI** | **COCO** | **VOC** |
+| -------- | --------- | --------- | --------- | 
 | Number of Classes | 10 | 91 | 20 |
 | Training samples | 5500 | 80000| 13500 |
 | val samples | 1981 | 38000 | 3625 |
