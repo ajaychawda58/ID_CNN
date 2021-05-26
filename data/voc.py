@@ -79,6 +79,3 @@ class VOC(object):
             if not children:
                 voc_dict[node.tag] = text
         return voc_dict
-
-
-

@@ -48,5 +48,3 @@ class KITTI(object):
 
     def __len__(self):
         return len(self.imgs)
-
-    

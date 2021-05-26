@@ -22,7 +22,6 @@ class Coco(torch.utils.data.Dataset):
         """
         Args:
             index (int): Index
-
         Returns:
             tuple: Tuple (image, target). target is the object returned by ``coco.loadAnns``.
         """
