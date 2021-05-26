@@ -24,6 +24,17 @@ One of the geometric properties of representing data in neural network is Intrin
 
 ## Training and Evaluation
 
+To train the models, scripts are in `scripts` directory. For evaluation run `evaluate.sh` by changing the parameters in the code for different augmentations.
+
+**Average Precision IOU@0.50**
+
+| Model | KITTI | COCO | VOC |
+| ----- | ----- | ----- | ----- |
+| VGG-16 Faster RCNN | 43.4 | 36.5 | 57.6 |
+| VGG-19 Faster RCNN | 49.4 | 37.0 | 49.6 |
+| Res-101 Faster RCNN | - | - | - |
+| VGG-16 RetinaNet | 34.2 | - | - |
+| VGG-19 RetinaNet | 35.0 | - | - |
 ## Plots
 
 ![Image1](Plots/1.png)
