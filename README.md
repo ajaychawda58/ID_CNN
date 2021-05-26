@@ -19,6 +19,10 @@ The plot on the left compares COCO and VOC data set on models trained on VOC and
 
 The plots i) KITTI  ii} VOC  iii) COCO are for Faster RCNN on VGG-16 for different augmentations of the data sets.
 
+![Image7](Plots/Kitti.png)
+![Image8](Plots/COCO.png)
+![Image9](Plots/VOC.png)
+
 ## References
 1. Intrinsic Dimension calculation - https://github.com/ansuini/IntrinsicDimDeep
 2. KITTI dataset class - https://github.com/keshik6/KITTI-2d-object-detection
