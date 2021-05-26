@@ -86,7 +86,7 @@ if args.dataset == 'pascal_voc':
     indices = torch.randperm(len(data)).tolist()
     dataset = torch.utils.data.Subset(data, indices[:13500])
     testdata = torch.utils.data.Subset(data, indices[13500:])
-    traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
+    traindata = DataLoader(dataset, batch_size=8, shuffle=True, collate_fn=collate_fn)
     data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
 elif args.dataset == 'kitti':
     root = '/work/chawda/Dataset/KITTI'
@@ -97,7 +97,7 @@ elif args.dataset == 'kitti':
     indices = torch.randperm(len(data)).tolist()
     dataset = torch.utils.data.Subset(data, indices[:5500])
     testdata = torch.utils.data.Subset(data, indices[5500:])
-    traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
+    traindata = DataLoader(dataset, batch_size=8, shuffle=True, collate_fn=collate_fn)
     data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
 else:
     root = '/work/chawda/Dataset/COCO/train2017/'
@@ -108,7 +108,7 @@ else:
     indices = torch.randperm(len(data)).tolist()
     dataset = torch.utils.data.Subset(data, indices[:100000])
     testdata = torch.utils.data.Subset(data, indices[100000:])
-    traindata = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
+    traindata = DataLoader(dataset, batch_size=8, shuffle=True, collate_fn=collate_fn)
     data_loader_test = DataLoader(testdata, batch_size=4, shuffle=True, collate_fn=collate_fn)
     num_classes = 91
     
@@ -133,24 +133,8 @@ backbone_name = args.backbone
 if backbone_name == 'vgg16':
     backbone = vgg16(pretrained=True).features
     backbone.out_channels = 512
-elif backbone_name == 'vgg11':
-    backbone = vgg11(pretrained=True).features
-    backbone.out_channels = 512
-elif backbone_name == 'vgg13':
-    backbone = vgg13(pretrained=True).features
-    backbone.out_channels = 512
 elif backbone_name == 'vgg19':
     backbone = vgg19(pretrained=True).features
-    backbone.out_channels = 512
-elif backbone_name == 'resnet_18':
-    resnet_net = resnet18(pretrained=True)
-    modules = list(resnet_net.children())[:-1]
-    backbone = nn.Sequential(*modules)
-    backbone.out_channels = 512
-elif backbone_name == 'resnet_34':
-    resnet_net = torchvision.models.resnet34(pretrained=True)
-    modules = list(resnet_net.children())[:-1]
-    backbone = nn.Sequential(*modules)
     backbone.out_channels = 512
 elif backbone_name == 'resnet_50':
     resnet_net = torchvision.models.resnet50(pretrained=True)
@@ -162,60 +146,27 @@ elif backbone_name == 'resnet_101':
     modules = list(resnet_net.children())[:-1]
     backbone = nn.Sequential(*modules)
     backbone.out_channels = 2048
-elif backbone_name == 'resnet_152':
-    resnet_net = torchvision.models.resnet152(pretrained=True)
-    modules = list(resnet_net.children())[:-1]
-    backbone = nn.Sequential(*modules)
-    backbone.out_channels = 2048
-elif backbone_name == 'resnet_50_modified_stride_1':
-    resnet_net = resnet50(pretrained=True)
-    modules = list(resnet_net.children())[:-1]
-    backbone = nn.Sequential(*modules)
-    backbone.out_channels = 2048
-elif backbone_name == 'resnext101_32x8d':
-    resnet_net = torchvision.models.resnext101_32x8d(pretrained=True)
-    modules = list(resnet_net.children())[:-1]
-    backbone = nn.Sequential(*modules)
-    backbone.out_channels = 2048
+
 
 anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),), aspect_ratios=((0.5,1.0,2.0),)) 
 
 roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=7, sampling_ratio=2)
-#mask_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=14,sampling_ratio=2)
-#keypoint_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=14,sampling_ratio=2)
 
 if args.model == 'faster_rcnn':
     model = FasterRCNN(backbone, num_classes=num_classes, rpn_anchor_generator= anchor_generator, box_roi_pool=roi_pooler)
-#elif args.#model == 'mask_rcnn':
-#    model = MaskRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler,
-#                                                                                    mask_roi_pool=mask_roi_pooler)
-#elif args.model == 'keypoint_rcnn':
-#    model = KeypointRCNN(backbone, num_classes=num_classes, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler, 
-#                                                                           keypoint_roi_pool=keypoint_roi_pooler)
+                       keypoint_roi_pool=keypoint_roi_pooler)
 elif args.model == 'retinanet':
     model = RetinaNet(backbone, num_classes=num_classes, anchor_generator=anchor_generator)
 
 model.to(device)
-
-#model = nn.DataParallel(model)
 
 
 params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
-num_epochs = args.epoch
-
-
-
 for epoch in range(num_epochs):
-    if epoch % 20 == 0:
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict' : model.state_dict(),
-            'optimizer_state_dict' : optimizer.state_dict(),
-        }, os.path.join(checkpoint_path, "checkpoint_"+str(epoch)+".pt"))
-	
+    	
     # train for one epoch, printing every 10 iterations
     train_one_epoch(model, optimizer, traindata, device, epoch, print_freq=1000)
     # update the learning rate
