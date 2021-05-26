@@ -27,6 +27,7 @@ The plots i) KITTI  ii} VOC  iii) COCO are for Faster RCNN on VGG-16 for differe
 ![Image8](Plots/COCO.png)
 ![Image9](Plots/VOC.png)
 
+Comparison of KITTI, COCO and VOC on Faster RCNN with VGG-16, VGG-19 and Res-101 backbones.
 
 ## Conclusions
 
