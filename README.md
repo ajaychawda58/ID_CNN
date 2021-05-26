@@ -10,6 +10,7 @@ One of the geometric properties of representing data in neural network is Intrin
 | Number of Classes | 10 | 91 | 20 |
 | Training samples | 5500 | 80000| 13500 |
 | val samples | 1981 | 38000 | 3625 |
+| Image Sizes | 1200 x 1200, 300 x 300 | 300 x 300 | 300 x 300 |
 
 ## Training and Evaluation
 
