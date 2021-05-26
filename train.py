@@ -17,8 +17,8 @@ from transforms import ToTensor, Resize, Compose
 from data.coco import Coco
 from data.kitti_dataset import KITTI
 from data.voc import VOC
-from backbone.backbone_vgg import vgg16, vgg11, vgg13, vgg19
-from backbone.backbone_resnet import resnet18, resnet34
+from backbone.backbone_vgg import vgg16, vgg19
+from backbone.backbone_resnet import resnet50, resnet101
 from models.faster_rcnn_mod import FasterRCNN
 from models.mask_rcnn_mod import MaskRCNN
 from models.keypoint_rcnn_mod import KeypointRCNN
