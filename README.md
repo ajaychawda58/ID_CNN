@@ -85,7 +85,14 @@ The plots i) KITTI  ii} VOC  iii) COCO are for Faster RCNN on VGG-16 for differe
 Comparison of KITTI, COCO and VOC on Faster RCNN with VGG-16, VGG-19 and Res-101 backbones.
 
 ## Fractal Dimesnion
-Under Construction
+FD is calculated using box count method. Please refer to link in refernces for more information.
+
+![Image10](Plots/FD_kitti.png)
+![Image11](Plots/FD_coco.png)
+![Image12](Plots/FD_voc.png)
+
+The boxplots show that there is less deviation among the augmented data sets for the same 2000 images used for calculation of ID using Two NN algorithm. There is however an interesting observation in case KITTI Vertical shift where the FD has a large standard deviation and ID is high in second pooling layer in the Faster RCNN model. There might be some relation between them. But, due to uncorrelated dimensionality between ID and FD for all other data sets, we doubt that FD estimated using box count method and ID estimated using Two NN algorithm has no direct or indirect relationship.
+
 ## Conclusions
 - While estimation of ID, bounding box with highest score is used as input to ROI pooling layer from the region proposal network due to constraint of our ID estimation algorithm where each image is represented as a point at layers of our network leads to no change in ID at layers after RPN. What happened while using bounding box with lowest scores? Our results did not have an impact because average precision depends on all objects predicted by the network. Another reason is removal of images from our estimation process if there are no predictions for bounding boxes, because in such scenarios there will be no data points for representation at ROI pooling layer. With 1200 pixels square image the memory requirements during computation of high dimensional tensor (400 x 2304000) is 33.8G. So to reduce computational requirement and save time ID is estimated using 400 images. To check the stability of results, ID is estimated for both small and large sizes, the ID value is higher in the case of a larger image but ID follows similar structure when plotted against the layers used for estimating ID.
 - Hunchback shape is evident in trained networks whereas in untrained networks the network displays a flat profile. In our experiments, flatter trajectory for rotated images is observed, which indicate that rotated images have poor representation in the manifold. It is proven from the evaluation of rotated images where average precision is low compared to other augmentations over all data sets. Hunchback profile for other augmented data sets with varying ID at different layers is present, hence they are represented better within network in comparison to rotated images.
