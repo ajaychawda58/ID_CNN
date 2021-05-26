@@ -12,16 +12,16 @@ One of the geometric properties of representing data in neural network is Intrin
     ├── Plots                    
     ├── analyze                   
     ├── backbone
-    ├── Dataset
-        ├── KITTI
-            ├── testing
-            ├── training
-        ├── COCO
+    └── Dataset
+        └── KITTI
+            ├── testing             #folder contains the augmented data sets.
+            └── training
+        └── COCO
             ├── train2017
-            ├── test2017
-        ├── VOCdevkit
-            ├── VOCtest
-            ├── VOC2012
+            └── test2017            #folder contains the augmented data sets.
+        └── VOCdevkit
+            ├── VOC2007             #folder contains the augmented data sets.
+            └── VOC2012
     ├── data
     ├── models
     ├── scripts
@@ -45,6 +45,7 @@ One of the geometric properties of representing data in neural network is Intrin
 - *Vertical Flip*- Like a horizontal flip, it is performed using cv2.flip however, its second argument should be 0.
 - *Rotation* - Rotating the image by a certain angle. (In our paper, 45 degrees)
 
+To create the augmented data sets run `augmentation.py` . 
 
 ## Training and Evaluation
 
