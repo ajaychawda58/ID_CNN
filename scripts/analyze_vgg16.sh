@@ -8,12 +8,12 @@ module load anaconda3/latest
 . $ANACONDA_HOME/etc/profile.d/conda.sh
 conda activate idenv
 
-python3 ../analyze_vgg16.py --augment JPEGImages
-python3 ../analyze_vgg16.py --augment channel_shift
-python3 ../analyze_vgg16.py --augment horizontal_flip
-python3 ../analyze_vgg16.py --augment horizontal_shift
-python3 ../analyze_vgg16.py --augment vertical_shift
-python3 ../analyze_vgg16.py --augment vertical_flip
-python3 ../analyze_vgg16.py --augment rotation
+python3 ../analyze/analyze_vgg16.py --augment JPEGImages
+python3 ../analyze/analyze_vgg16.py --augment channel_shift
+python3 ../analyze/analyze_vgg16.py --augment horizontal_flip
+python3 ../analyze/analyze_vgg16.py --augment horizontal_shift
+python3 ../analyze/analyze_vgg16.py --augment vertical_shift
+python3 ../analyze/analyze_vgg16.py --augment vertical_flip
+python3 ../analyze/analyze_vgg16.py --augment rotation
 
 conda deactivate

@@ -9,7 +9,7 @@ module load anaconda3/latest
 conda activate idenv
 
 
-python3 ../analyze_retinanet_kitti.py --augment horizontal_shift --backbone vgg19
+python3 ../analyze/analyze_retinanet_kitti.py --augment horizontal_shift --backbone vgg19
 
 
 conda deactivate

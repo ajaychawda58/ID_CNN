@@ -8,6 +8,6 @@ module load anaconda3/latest
 . $ANACONDA_HOME/etc/profile.d/conda.sh
 conda activate idenv
 
-python3 ../analyze_coco_voc.py --augment test2017 --testdata coco
+python3 ../analyze/analyze_coco_voc.py --augment test2017 --testdata coco
 
 conda deactivate

@@ -9,10 +9,10 @@ module load anaconda3/latest
 conda activate idenv
 
 
-python3 ../analyze_vgg19.py --augment vertical_shift --model pascal_voc
-python3 ../analyze_vgg19.py --augment vertical_flip --model pascal_voc
-python3 ../analyze_vgg19.py --augment horizontal_flip --model pascal_voc
-python3 ../analyze_vgg19.py --augment channel_shift --model pascal_voc
-python3 ../analyze_vgg19.py --augment rotation --model pascal_voc
+python3 ../analyze/analyze_vgg19.py --augment vertical_shift --model pascal_voc
+python3 ../analyze/analyze_vgg19.py --augment vertical_flip --model pascal_voc
+python3 ../analyze/analyze_vgg19.py --augment horizontal_flip --model pascal_voc
+python3 ../analyze/analyze_vgg19.py --augment channel_shift --model pascal_voc
+python3 ../analyze/analyze_vgg19.py --augment rotation --model pascal_voc
 
 conda deactivate
