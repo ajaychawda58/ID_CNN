@@ -3,9 +3,14 @@ Intrinsic Dimension of Convolutional Neural Networks
 
 One of the geometric properties of representing data in neural network is Intrinsic Dimension i.e. minimum number of co-ordinates required to represent data without information loss. Local ID estimators compute in local subspaces of data representation. Global ID estimators compute over whole data point representation. Both global and local ID estimators can be used for estimation in alternate data neighbourhood. Our aim is to estimate ID at different layers for object detection networks and determine the relationship between average precision of augmented data and estimated ID. ID characteristics are distinguishable for normal and adversarial generated samples in local space. This motivates us to experiment with ID estimation in global space. TwoNN algorithm is implemented in our paper to estimate ID.
 
-## Training and Evaluation
-
 ## Datasets
+
+| Dataset | **KITTI** | **COCO** | **VOC** |
+| Number of Classes | 10 | 91 | 20 |
+| Training samples | 5500 | 80000| 13500 |
+| val samples | 1981 | 38000 | 3625 |
+
+## Training and Evaluation
 
 ## Plots
 
