@@ -84,6 +84,8 @@ The plots i) KITTI  ii} VOC  iii) COCO are for Faster RCNN on VGG-16 for differe
 
 Comparison of KITTI, COCO and VOC on Faster RCNN with VGG-16, VGG-19 and Res-101 backbones.
 
+## Fractal Dimesnion
+
 ## Conclusions
 
 
@@ -92,3 +94,4 @@ Comparison of KITTI, COCO and VOC on Faster RCNN with VGG-16, VGG-19 and Res-101
 2. KITTI dataset class - https://github.com/keshik6/KITTI-2d-object-detection
 3. Image augmentations - https://towardsdatascience.com/complete-image-augmentation-in-opencv-31a6b02694f5
 4. Fractal Dimension - https://github.com/ajaychawda58/Fractal-Dimension
+5. All codes for backbones and models for training and evaluation purpose are referred from Pytorch source code.
