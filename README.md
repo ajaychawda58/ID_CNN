@@ -12,6 +12,16 @@ One of the geometric properties of representing data in neural network is Intrin
 | val samples | 1981 | 38000 | 3625 |
 | Image Sizes | 1200 x 1200, 300 x 300 | 300 x 300 | 300 x 300 |
 
+**Augmentations**
+- *Horizontal Shift* - Horizontal shift or translation is shifting the image left or right based on a ratio that defines how much maximum to shift.
+- *Vertical Shift* - Vertical shift or translation is shifting the image top or bottom based on a ratio that defines how much maximum to shift.
+- *Channel Shift* - In Channel shift, a random amount of value is added to all the channels of the images chosen from the range specified. (In our paper, 50)
+- *Horizontal Flip* - It takes a boolean variable that defines if a horizontal flip is to be performed or not. There is an inbuilt function in OpenCV cv2.flip which is used to perform just this operation.
+
+- *Vertical Flip*- Like a horizontal flip, it is performed using cv2.flip however, its second argument should be 0.
+- *Rotation* - Rotating the image by a certain angle. (In our paper, 45 degrees)
+
+
 ## Training and Evaluation
 
 ## Plots
