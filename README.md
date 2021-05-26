@@ -92,7 +92,7 @@ FD is calculated using box count method. Please refer to link in refernces for m
            
 ![Image12](Plots/FD_voc.png)
             
- i) KITTI- *Top Left*       ii) COCO - *Top Right*       iii) VOC - *Bottom*
+ i) KITTI- *Top*       ii) COCO - *Middle*       iii) VOC - *Bottom*
 The boxplots show that there is less deviation among the augmented data sets for the same 2000 images used for calculation of ID using Two NN algorithm. There is however an interesting observation in case KITTI Vertical shift where the FD has a large standard deviation and ID is high in second pooling layer in the Faster RCNN model. There might be some relation between them. But, due to uncorrelated dimensionality between ID and FD for all other data sets, we doubt that FD estimated using box count method and ID estimated using Two NN algorithm has no direct or indirect relationship.
 
 ## Conclusions
