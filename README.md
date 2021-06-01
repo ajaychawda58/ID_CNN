@@ -71,7 +71,6 @@ To train the models, scripts are in `scripts` directory. For evaluation run `eva
 | ----- | ----- | ----- | ----- |
 | VGG-16 Faster RCNN | 43.4 | 36.5 | 57.6 |
 | VGG-19 Faster RCNN | 49.4 | 37.0 | 49.6 |
-| Res-101 Faster RCNN | - | - | - |
 | VGG-16 RetinaNet | 34.2 | - | - |
 | VGG-19 RetinaNet | 35.0 | - | - |
 ## Plots
