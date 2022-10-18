@@ -115,6 +115,17 @@ The boxplots show that there is less deviation among the augmented data sets for
 - Comparing Faster RCNN median ID with res-101 backbone, we observe that the highest ID is acheived in later layers than VGG backbone that indicates that irrelevant features are learned during later convolutional layer in the network. But our network did not perform well in terms of AP with resnet backbone. So, we cannot be completely sure about this conclusion.
 
 ## References
+
+Please consider citing our work if you found this repository to be helpful.
+```
+@article{
+    Author = {Ajay Chawda and Axel Vierling and Karsten Berns},
+    Title = {Dimensionality of datasets in object detection netwroks},
+    Journal = {https://arxiv.org/abs/2210.07049},
+    Year = {2020},
+}
+```
+
 1. Intrinsic Dimension calculation - https://github.com/ansuini/IntrinsicDimDeep
 2. KITTI dataset class - https://github.com/keshik6/KITTI-2d-object-detection
 3. Image augmentations - https://towardsdatascience.com/complete-image-augmentation-in-opencv-31a6b02694f5
